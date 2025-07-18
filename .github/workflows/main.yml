@@ -1,4 +1,4 @@
-name: Windows RDP
+name: Free RDP via GitHub Actions
 
 on: [push]
 
@@ -14,19 +14,19 @@ jobs:
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-    - name: Download and run ngrok
+    - name: Download and Launch ngrok
       run: |
         Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-        Expand-Archive ngrok.zip -DestinationPath ngrok
-        Set-Location ngrok
-        .\ngrok.exe authtoken YOUR_NGROK_AUTH_TOKEN
-        Start-Process .\ngrok.exe "tcp 3389" -WindowStyle Hidden
-        Start-Sleep -Seconds 20
+        Expand-Archive ngrok.zip -DestinationPath .
+        .\ngrok.exe authtoken 1hQpFRJ1NwLJ250CB1tJ7AP0NKS_7VKdHnaQaUpg5zh3vd8TQ
+        Start-Job { .\ngrok.exe tcp 3389 }
+        Start-Sleep -Seconds 30
 
-    - name: Get ngrok public URL
+    - name: Fetch ngrok RDP address
       run: |
-        Invoke-WebRequest http://127.0.0.1:4040/api/tunnels -UseBasicParsing | Out-File ../ngrok_info.json
-        Get-Content ../ngrok_info.json
+        $tunnel = Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels
+        $rdp = $tunnel.tunnels.public_url
+        Write-Output "`n🔗 RDP Address: $rdp`n"
 
     - name: Keep Alive
       run: ping 127.0.0.1 -t
