@@ -1,0 +1,21 @@
+name: Windows RDP Setup
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360 # Max is 6 hours
+
+    steps:
+    - name: Setup user and RDP
+      run: |
+        net user runneradmin YourPassword123 /add
+        net localgroup administrators runneradmin /add
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        tar -xf ngrok.zip
+        .\ngrok\ngrok.exe authtoken YOUR_NGROK_AUTH_TOKEN
+        .\ngrok\ngrok.exe tcp 3389 > ngrok.log &
+        Start-Sleep -Seconds 21500
