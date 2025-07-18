@@ -1,4 +1,4 @@
-name: RDP via GitHub
+name: Windows RDP
 
 on: [push]
 
@@ -8,24 +8,25 @@ jobs:
     timeout-minutes: 360
 
     steps:
-    - name: Enable RDP
+    - name: Set up RDP
       run: |
         net user runneradmin YourPass123
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-    - name: Download and Start ngrok
+    - name: Download and run ngrok
       run: |
         Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-        Expand-Archive ngrok.zip -DestinationPath .
+        Expand-Archive ngrok.zip -DestinationPath ngrok
+        Set-Location ngrok
         .\ngrok.exe authtoken YOUR_NGROK_AUTH_TOKEN
         Start-Process .\ngrok.exe "tcp 3389" -WindowStyle Hidden
-
-    - name: Show ngrok tunnel info
-      run: |
         Start-Sleep -Seconds 20
-        Invoke-WebRequest -UseBasicParsing http://127.0.0.1:4040/api/tunnels > tunnels.json
-        Get-Content tunnels.json
 
-    - name: Keep session alive
-      run: ping -t 127.0.0.1
+    - name: Get ngrok public URL
+      run: |
+        Invoke-WebRequest http://127.0.0.1:4040/api/tunnels -UseBasicParsing | Out-File ../ngrok_info.json
+        Get-Content ../ngrok_info.json
+
+    - name: Keep Alive
+      run: ping 127.0.0.1 -t
